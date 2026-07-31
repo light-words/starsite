@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Our Sky 💫</title>
+<style>
+body {
+  margin: 0;
+  background: black;
+  overflow: hidden;
+}
+
+canvas {
+  display: block;
+}
+
+#popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0,0,0,0.85);
+  padding: 20px;
+  border-radius: 12px;
+  display: none;
+  color: white;
+  text-align: center;
+}
+
+#popup input {
+  padding: 8px;
+  width: 200px;
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="sky"></canvas>
+
+<div id="popup">
+  <input id="msg" placeholder="write a message ✧">
+  <br><br>
+  <button onclick="submitStar()">save ✨</button>
+</div>
+
+<audio autoplay loop>
+  <source src="music.mp3" type="audio/mpeg">
+</audio>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// 🔥 PASTE YOUR FIREBASE CONFIG HERE
+const firebaseConfig = {
+  apiKey: "YOUR_KEY",
+  authDomain: "YOUR_DOMAIN",
+  projectId: "YOUR_ID",
+  storageBucket: "YOUR_BUCKET",
+  messagingSenderId: "YOUR_MSG_ID",
+  appId: "YOUR_APP_ID"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const canvas = document.getElementById("sky");
+const ctx = canvas.getContext("2d");
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let stars = [];
+
+// draw stars
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  stars.forEach(s=>{
+    ctx.beginPath();
+    ctx.arc(s.x,s.y,3,0,Math.PI*2);
+    ctx.fillStyle = "white";
+    ctx.fill();
+  });
+
+  requestAnimationFrame(draw);
+}
+draw();
+
+// load real-time stars
+onSnapshot(collection(db,"stars"), (snapshot)=>{
+  stars = [];
+  snapshot.forEach(doc=>{
+    stars.push(doc.data());
+  });
+});
+
+// popup
+window.openPopup = function(x,y){
+  window.starX = x;
+  window.starY = y;
+  document.getElementById("popup").style.display = "block";
+};
+
+window.submitStar = async function(){
+  const message = document.getElementById("msg").value;
+
+  await addDoc(collection(db,"stars"),{
+    x: window.starX,
+    y: window.starY,
+    message: message
+  });
+
+  document.getElementById("popup").style.display = "none";
+};
+
+// click to add star
+canvas.addEventListener("click", (e)=>{
+  openPopup(e.clientX, e.clientY);
+});
+</script>
+
+</body>
+</html>
