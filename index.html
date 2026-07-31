@@ -1,15 +1,134 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>⋆ Find the Stars ⋆</title>
-  <link rel="stylesheet" href="style.css">
+  <title>Find the Stars ✧</title>
+  <style>
+    body {
+      margin: 0;
+      background: black;
+      overflow: hidden;
+      font-family: sans-serif;
+    }
+
+    canvas {
+      display: block;
+    }
+
+    .text {
+      position: absolute;
+      bottom: 20px;
+      width: 100%;
+      text-align: center;
+      color: #aaa;
+      font-size: 14px;
+      letter-spacing: 2px;
+    }
+  </style>
 </head>
 <body>
 
-<canvas id="sky"></canvas>
+<canvas id="canvas"></canvas>
+<div class="text">connect the stars ✧</div>
 
-<div class="hint">draw the stars ✧</div>
+<script>
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
 
-<script src="lock.js"></script>
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+// ⭐ Visible constellation points (you can tweak these)
+const stars = [
+  {x: 200, y: 200},
+  {x: 400, y: 150},
+  {x: 600, y: 250},
+  {x: 500, y: 400},
+  {x: 300, y: 350}
+];
+
+// 🔐 Correct pattern (order matters)
+const correctPattern = [0, 1, 2, 3, 4];
+
+let userPattern = [];
+
+// draw stars
+function drawStars() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // background stars
+  for (let i = 0; i < 150; i++) {
+    ctx.fillStyle = "white";
+    ctx.fillRect(
+      Math.random() * canvas.width,
+      Math.random() * canvas.height,
+      1,
+      1
+    );
+  }
+
+  // constellation stars
+  stars.forEach((star, i) => {
+    ctx.beginPath();
+    ctx.arc(star.x, star.y, 6, 0, Math.PI * 2);
+    ctx.fillStyle = userPattern.includes(i) ? "#fff" : "#888";
+    ctx.fill();
+  });
+
+  // draw lines
+  ctx.strokeStyle = "#fff";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+
+  userPattern.forEach((index, i) => {
+    const star = stars[index];
+    if (i === 0) {
+      ctx.moveTo(star.x, star.y);
+    } else {
+      ctx.lineTo(star.x, star.y);
+    }
+  });
+
+  ctx.stroke();
+}
+
+drawStars();
+
+// click handling
+canvas.addEventListener("click", (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+
+  stars.forEach((star, i) => {
+    const dx = mx - star.x;
+    const dy = my - star.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    if (dist < 15 && !userPattern.includes(i)) {
+      userPattern.push(i);
+      drawStars();
+
+      checkPattern();
+    }
+  });
+});
+
+// check unlock
+function checkPattern() {
+  if (userPattern.length === correctPattern.length) {
+    if (JSON.stringify(userPattern) === JSON.stringify(correctPattern)) {
+      // 🎉 UNLOCK
+      window.location.href = "sky.html";
+    } else {
+      // ❌ wrong → reset
+      setTimeout(() => {
+        userPattern = [];
+        drawStars();
+      }, 500);
+    }
+  }
+}
+</script>
+
 </body>
 </html>
