@@ -1,130 +1,167 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Find the Stars ✧</title>
-  <style>
-    body {
-      margin: 0;
-      background: black;
-      overflow: hidden;
-      font-family: sans-serif;
-    }
+<title>Secret Sky ✨</title>
+<style>
+body {
+  margin: 0;
+  overflow: hidden;
+  background: black;
+  font-family: sans-serif;
+}
 
-    canvas {
-      display: block;
-    }
+#text {
+  position: absolute;
+  top: 20px;
+  width: 100%;
+  text-align: center;
+  color: white;
+}
 
-    .text {
-      position: absolute;
-      bottom: 20px;
-      width: 100%;
-      text-align: center;
-      color: #aaa;
-      font-size: 14px;
-      letter-spacing: 2px;
-    }
-  </style>
+canvas {
+  display: block;
+}
+
+.shake {
+  animation: shake 0.3s;
+}
+
+@keyframes shake {
+  0% {transform: translateX(0);}
+  25% {transform: translateX(-5px);}
+  50% {transform: translateX(5px);}
+  75% {transform: translateX(-5px);}
+  100% {transform: translateX(0);}
+}
+</style>
 </head>
+
 <body>
 
+<div id="text">draw the constellation ✧</div>
 <canvas id="canvas"></canvas>
-<div class="text">connect the stars ✧</div>
+
+<audio autoplay loop>
+  <source src="music.mp3" type="audio/mpeg">
+</audio>
 
 <script>
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
+const text = document.getElementById("text");
 
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-// ⭐ Visible constellation points (you can tweak these)
 const stars = [
-  {x: 200, y: 200},
-  {x: 400, y: 150},
-  {x: 600, y: 250},
-  {x: 500, y: 400},
-  {x: 300, y: 350}
+  {x: 400, y: 200},
+  {x: 500, y: 150},
+  {x: 600, y: 200},
+  {x: 550, y: 300},
+  {x: 450, y: 300}
 ];
 
-// 🔐 Correct pattern (order matters)
-const correctPattern = [0, 1, 2, 3, 4];
-
+const correctPattern = [0,1,2,3,4];
 let userPattern = [];
+let progress = 0;
 
-// draw stars
-function drawStars() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+// ✨ background twinkle
+const bgStars = Array.from({length: 120}, () => ({
+  x: Math.random() * canvas.width,
+  y: Math.random() * canvas.height,
+  alpha: Math.random(),
+  speed: Math.random() * 0.02
+}));
 
-  // background stars
-  for (let i = 0; i < 150; i++) {
-    ctx.fillStyle = "white";
-    ctx.fillRect(
-      Math.random() * canvas.width,
-      Math.random() * canvas.height,
-      1,
-      1
-    );
-  }
+function draw() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  // constellation stars
-  stars.forEach((star, i) => {
-    ctx.beginPath();
-    ctx.arc(star.x, star.y, 6, 0, Math.PI * 2);
-    ctx.fillStyle = userPattern.includes(i) ? "#fff" : "#888";
-    ctx.fill();
+  bgStars.forEach(s => {
+    s.alpha += s.speed;
+    if (s.alpha > 1 || s.alpha < 0) s.speed *= -1;
+
+    ctx.fillStyle = `rgba(255,255,255,${s.alpha})`;
+    ctx.fillRect(s.x, s.y, 2, 2);
   });
 
-  // draw lines
   ctx.strokeStyle = "#fff";
   ctx.lineWidth = 2;
   ctx.beginPath();
 
-  userPattern.forEach((index, i) => {
+  userPattern.forEach((index,i)=>{
     const star = stars[index];
-    if (i === 0) {
-      ctx.moveTo(star.x, star.y);
+    if(i===0){
+      ctx.moveTo(star.x,star.y);
     } else {
-      ctx.lineTo(star.x, star.y);
+      const prev = stars[userPattern[i-1]];
+      const t = Math.min(progress,1);
+      const x = prev.x + (star.x - prev.x)*t;
+      const y = prev.y + (star.y - prev.y)*t;
+      ctx.lineTo(x,y);
     }
   });
 
   ctx.stroke();
+
+  stars.forEach((star,i)=>{
+    ctx.beginPath();
+    ctx.arc(star.x,star.y,6,0,Math.PI*2);
+
+    if(userPattern.includes(i)){
+      ctx.shadowBlur = 20;
+      ctx.fillStyle = "#fff";
+    } else {
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = "#888";
+    }
+
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  });
+
+  requestAnimationFrame(draw);
 }
+draw();
 
-drawStars();
-
-// click handling
-canvas.addEventListener("click", (e) => {
-  const rect = canvas.getBoundingClientRect();
-  const mx = e.clientX - rect.left;
-  const my = e.clientY - rect.top;
-
-  stars.forEach((star, i) => {
-    const dx = mx - star.x;
-    const dy = my - star.y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-
-    if (dist < 15 && !userPattern.includes(i)) {
+function handleInput(x,y){
+  stars.forEach((star,i)=>{
+    const dx = x-star.x;
+    const dy = y-star.y;
+    if(Math.sqrt(dx*dx+dy*dy)<20 && !userPattern.includes(i)){
       userPattern.push(i);
-      drawStars();
+      progress = 0;
+
+      let anim = setInterval(()=>{
+        progress += 0.1;
+        if(progress>=1) clearInterval(anim);
+      },16);
 
       checkPattern();
     }
   });
+}
+
+canvas.addEventListener("click", e=>{
+  handleInput(e.clientX,e.clientY);
 });
 
-// check unlock
-function checkPattern() {
-  if (userPattern.length === correctPattern.length) {
-    if (JSON.stringify(userPattern) === JSON.stringify(correctPattern)) {
-      // 🎉 UNLOCK
-      window.location.href = "sky.html";
+canvas.addEventListener("touchstart", e=>{
+  const t = e.touches[0];
+  handleInput(t.clientX,t.clientY);
+});
+
+function checkPattern(){
+  if(userPattern.length===correctPattern.length){
+    if(JSON.stringify(userPattern)===JSON.stringify(correctPattern)){
+      text.innerText="unlocking ✧";
+      setTimeout(()=>window.location.href="sky.html",800);
     } else {
-      // ❌ wrong → reset
-      setTimeout(() => {
-        userPattern = [];
-        drawStars();
-      }, 500);
+      text.classList.add("shake");
+      setTimeout(()=>text.classList.remove("shake"),300);
+
+      setTimeout(()=>{
+        userPattern=[];
+      },600);
     }
   }
 }
